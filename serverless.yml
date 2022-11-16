@@ -1,0 +1,53 @@
+plugins:
+  - serverless-offline
+
+service: s3-multipart-upload
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  region: ap-south-1
+  runtime: nodejs14.x
+  endpointType: REGIONAL
+  apiGateway:
+    binaryMediaTypes:
+      - '*/*'
+
+layers:
+  awsSDK:
+    path: ./layer
+    compatibleRuntimes:
+      - nodejs14.x
+    compatibleArchitectures:
+      - x86_64
+
+functions:
+  upload:
+    handler: upload.main
+    memorySize: 1024
+    layers:
+      - !Ref AwsSDKLambdaLayer 
+    environment:
+      AWS_BUCKET_NAME: ${param:bucket}
+  download:
+    handler: download.main
+    memorySize: 1024
+    events:
+      - http:
+          path: /download
+          method: get
+          request:
+            parameters:
+              querystrings:
+                key: true
+    layers:
+      - !Ref AwsSDKLambdaLayer 
+    environment:
+      AWS_BUCKET_NAME: ${param:bucket}
+
+params:
+  prod:
+    bucket: none
+  dev:
+    bucket: sample-dev-bucket
